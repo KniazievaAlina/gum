@@ -940,6 +940,37 @@
     <div id="scrollToTop" class="scrollToTop mbr-arrow-up"><a style="text-align: center;"><i
                 class="mbr-arrow-up-icon mbr-arrow-up-icon-cm cm-icon cm-icon-smallarrow-up"></i></a></div>
     <input name="animation" type="hidden">
+
+    <!-- СКРИПТДЛЯ ФІКСАЦІЇ ЛІЧИЛЬНИКА -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const counterBlock = document.getElementById('counter1-m');
+      if (!counterBlock) return;
+
+      const countElements = counterBlock.querySelectorAll('.count');
+      let hasAnimated = false;
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && !hasAnimated) {
+            hasAnimated = true;
+
+            setTimeout(() => {
+              countElements.forEach(el => {
+                const finalValue = el.textContent.trim();
+                el.textContent = finalValue;
+                el.classList.remove('mbr-animated');
+              });
+
+              observer.unobserve(counterBlock);
+            }, 2000);
+          }
+        });
+      }, { threshold: 0.3 });
+
+      observer.observe(counterBlock);
+    });
+    </script>
 </body>
 
 </html>
