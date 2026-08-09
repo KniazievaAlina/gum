@@ -36,7 +36,6 @@
 
 
 <style>
-  /* Забороняємо Mobirise ховати або скидати елементи блоку counter1-m */
   #counter1-m,
   #counter1-m .count,
   #counter1-m .item {
@@ -954,66 +953,82 @@
     <!-- СКРИПТДЛЯ ФІКСАЦІЇ ЛІЧИЛЬНИКА -->
  
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-  const section = document.getElementById('counter1-m');
-  if (!section) return;
+(function() {
+  // Точні значення для ваших трьох лічильників у порядку їх розміщення в HTML:
+  // 1-й: 1264 (замовлення)
+  // 2-й: 16 (років на ринку)
+  // 3-й: 36 (тон найбільше замовлення)
+  const EXACT_TARGETS = [1264, 16, 36];
 
-  const countElements = section.querySelectorAll('.count');
-  let hasRun = false;
+  function initSingleCounter() {
+    const section = document.getElementById('counter1-m');
+    if (!section) return;
 
-  // 1. Зберігаємо точні числа з HTML та очищаємо класи, які тригерять Mobirise
-  const targets = [];
-  countElements.forEach(function (el) {
-    targets.push(parseInt(el.textContent.replace(/\s+/g, ''), 10) || 0);
-    el.classList.remove('mbr-animated', 'counted', 'viewport-checker');
-    el.removeAttribute('data-to');
-    el.removeAttribute('data-target');
-  });
+    const countElements = section.querySelectorAll('.count');
+    if (!countElements.length) return;
 
-  // 2. Власна плавна анімація (працює рівно 1.5 секунди)
-  function startCustomCounter() {
-    const duration = 1500; // тривалість анімації в мілісекундах
-    const startTime = performance.now();
+    let hasRun = false;
 
-    function update(currentTime) {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1); // від 0 до 1
+    // Одразу відключаємо стандартні класи анімації Mobirise
+    countElements.forEach(function(el) {
+      el.classList.remove('mbr-animated', 'counted', 'viewport-checker');
+      el.removeAttribute('data-to');
+      el.removeAttribute('data-target');
+    });
 
-      countElements.forEach(function (el, index) {
-        const target = targets[index];
-        // Плавне уповільнення наприкінці (easeOutQuad)
-        const currentProgress = 1 - (1 - progress) * (1 - progress);
-        const currentValue = Math.floor(currentProgress * target);
+    // Власний лічильник з точними числами
+    function startCounter() {
+      const duration = 1800; // Тривалість анімації - 1.8 секунди
+      const startTime = performance.now();
 
-        el.textContent = currentValue;
-      });
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Формула плавного уповільнення наприкінці
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
 
-      if (progress < 1) {
-        requestAnimationFrame(update);
-      } else {
-        // Гарантуємо точні підсумкові значення після завершення
-        countElements.forEach(function (el, index) {
-          el.textContent = targets[index];
+        countElements.forEach(function(el, index) {
+          const target = EXACT_TARGETS[index] || 0;
+          const currentValue = Math.floor(easeProgress * target);
+          el.textContent = currentValue;
         });
+
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        } else {
+          // Залізобетонно виставляємо фінальні точні числа наприкінці
+          countElements.forEach(function(el, index) {
+            if (EXACT_TARGETS[index] !== undefined) {
+              el.textContent = EXACT_TARGETS[index];
+            }
+          });
+        }
       }
+
+      requestAnimationFrame(update);
     }
 
-    requestAnimationFrame(update);
+    // Запуск строго 1 раз при досягненні блоку
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting && !hasRun) {
+          hasRun = true;
+          startCounter();
+          observer.disconnect(); // Повністю вимикаємо спостереження
+        }
+      });
+    }, { threshold: 0.15 });
+
+    observer.observe(section);
   }
 
-  // 3. Запускаємо ТІЛЬКИ 1 РАЗ при появі на екрані
-  const observer = new IntersectionObserver(function (entries) {
-    entries.forEach(function (entry) {
-      if (entry.isIntersecting && !hasRun) {
-        hasRun = true;
-        startCustomCounter();
-        observer.disconnect(); // Повністю відключаємо спостерігач навіки
-      }
-    });
-  }, { threshold: 0.2 });
-
-  observer.observe(section);
-});
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSingleCounter);
+  } else {
+    initSingleCounter();
+  }
+})();
 </script>
 
 
