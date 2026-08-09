@@ -1025,7 +1025,21 @@
 })();
 </script>
 
-
+<script>
+  // Запасний фіксатор на випадок втручання Mobirise jQuery
+  setTimeout(function() {
+    const section = document.getElementById('counter1-m');
+    if (section) {
+      const counts = section.querySelectorAll('.count');
+      const exact = [1264, 16, 36];
+      counts.forEach((el, i) => {
+        if (el.textContent !== String(exact[i])) {
+          el.textContent = exact[i];
+        }
+      });
+    }
+  }, 3000);
+</script>
 </body>
 
 </html>
