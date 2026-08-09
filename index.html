@@ -34,16 +34,7 @@
     <link rel="preload" as="style" href="assets/mobirise/css/mbr-additional.css?v=h68dbN">
     <link rel="stylesheet" href="assets/mobirise/css/mbr-additional.css?v=h68dbN" type="text/css">
 
-<style>
-  #counter1-m,
-  #counter1-m .count,
-  #counter1-m .item {
-    opacity: 1 !important;
-    visibility: visible !important;
-    animation: none !important;
-    transition: none !important;
-  }
-</style>
+
 
 </head>
 
@@ -950,96 +941,48 @@
     <input name="animation" type="hidden">
 
     <!-- СКРИПТДЛЯ ФІКСАЦІЇ ЛІЧИЛЬНИКА -->
- 
+ <!-- РІШЕННЯ ДЛЯ ЛІЧИЛЬНИКА MOBIRISE -->
 <script>
-(function() {
-  const TARGETS = [1264, 16, 36];
+window.addEventListener('load', function () {
+  var section = document.getElementById('counter1-m');
+  if (!section) return;
 
-  function runCleanCounter() {
-    const section = document.getElementById('counter1-m');
-    if (!section) return;
+  var hasAnimated = false;
 
-    const countElements = section.querySelectorAll('.count');
-    if (!countElements.length) return;
+  // Використовуємо MutationObserver: чекаємо, поки Mobirise закінчить рахувати
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting && !hasAnimated) {
+        hasAnimated = true;
 
-    // 1. Негайно видаляємо всі атрибути та класи, за які Mobirise чіпляє свій лічильник
-    countElements.forEach(function(el) {
-      el.removeAttribute('data-to');
-      el.removeAttribute('data-target');
-      el.removeAttribute('data-speed');
-      el.classList.remove('mbr-animated', 'counted', 'viewport-checker');
-    });
+        // Чекаємо 2.5 секунди (час, за який Mobirise точно дораховує до 1264, 16, 36)
+        setTimeout(function () {
+          // 1. Примусово виставляємо точні підсумкові числа
+          var counts = section.querySelectorAll('.count');
+          if (counts[0]) counts[0].textContent = '1264';
+          if (counts[1]) counts[1].textContent = '16';
+          if (counts[2]) counts[2].textContent = '36';
 
-    let hasStarted = false;
+          // 2. Клонуємо блок counter1-m — це ВСЕОСЯЖНО видаляє всі події скролу Mobirise,
+          // прив'язані до цього блоку. Більше цифри не будуть скидатися!
+          var oldBlock = document.getElementById('counter1-m');
+          if (oldBlock && oldBlock.parentNode) {
+            var newBlock = oldBlock.cloneNode(true);
+            oldBlock.parentNode.replaceChild(newBlock, oldBlock);
+          }
 
-    // 2. Власна анімація від 0 до 100%
-    function animate() {
-      const duration = 1800; // 1.8 секунди
-      const startTime = performance.now();
+        }, 2500);
 
-      function step(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Плавне сповільнення наприкінці
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-
-        countElements.forEach(function(el, index) {
-          const target = TARGETS[index] || 0;
-          el.textContent = Math.floor(easeOut * target);
-        });
-
-        if (progress < 1) {
-          requestAnimationFrame(step);
-        } else {
-          // Жорстко прописуємо точні підсумкові цифри
-          countElements.forEach(function(el, index) {
-            el.textContent = TARGETS[index];
-          });
-        }
+        observer.disconnect(); // Вимикаємо стеження
       }
+    });
+  }, { threshold: 0.1 });
 
-      requestAnimationFrame(step);
-    }
-
-    // 3. Запуск при досягненні 10% видимості (щоб починало рахувати одразу)
-    const observer = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting && !hasStarted) {
-          hasStarted = true;
-          animate();
-          observer.disconnect(); // Повністю вимикаємо спостереження
-        }
-      });
-    }, { threshold: 0.1 });
-
-    observer.observe(section);
-  }
-
-  // Запускаємо якомога раніше
-  if (document.readyState === 'interactive' || document.readyState === 'complete') {
-    runCleanCounter();
-  } else {
-    document.addEventListener('DOMContentLoaded', runCleanCounter);
-  }
-})();
+  observer.observe(section);
+});
 </script>
 
-<script>
-  // Запасний фіксатор на випадок втручання Mobirise jQuery
-  setTimeout(function() {
-    const section = document.getElementById('counter1-m');
-    if (section) {
-      const counts = section.querySelectorAll('.count');
-      const exact = [1264, 16, 36];
-      counts.forEach((el, i) => {
-        if (el.textContent !== String(exact[i])) {
-          el.textContent = exact[i];
-        }
-      });
-    }
-  }, 3000);
-</script>
+    
 </body>
 
 </html>
