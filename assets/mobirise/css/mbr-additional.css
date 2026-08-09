@@ -1455,6 +1455,13 @@ a {
   padding-bottom: 1rem;
   background-color: #252525;
 }
+#counter1-m .count {
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: none !important;
+  transition: none !important;
+}
+
 .cid-vqzPFpB6Hz .mbr-fallback-image.disabled {
   display: none;
 }
