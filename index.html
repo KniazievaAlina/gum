@@ -954,79 +954,82 @@
  
 <script>
 (function() {
-  // Точні значення для ваших трьох лічильників у порядку їх розміщення в HTML:
-  // 1-й: 1264 (замовлення)
-  // 2-й: 16 (років на ринку)
-  // 3-й: 36 (тон найбільше замовлення)
   const EXACT_TARGETS = [1264, 16, 36];
 
-  function initSingleCounter() {
+  function initCounterFix() {
     const section = document.getElementById('counter1-m');
     if (!section) return;
 
     const countElements = section.querySelectorAll('.count');
     if (!countElements.length) return;
 
-    let hasRun = false;
+    let isFinished = false;
+    let hasStarted = false;
 
-    // Одразу відключаємо стандартні класи анімації Mobirise
-    countElements.forEach(function(el) {
-      el.classList.remove('mbr-animated', 'counted', 'viewport-checker');
-      el.removeAttribute('data-to');
-      el.removeAttribute('data-target');
+    // 1. ЗАХИСТ: Слідкуємо за елементами. Якщо Mobirise або щось інше
+    // намагається втрутитися після завершення — примусово повертаємо точні значення!
+    countElements.forEach(function(el, index) {
+      const targetVal = String(EXACT_TARGETS[index]);
+
+      const protector = new MutationObserver(function() {
+        if (isFinished && el.textContent.trim() !== targetVal) {
+          el.textContent = targetVal;
+        }
+      });
+
+      protector.observe(el, { childList: true, characterData: true, subtree: true });
     });
 
-    // Власний лічильник з точними числами
-    function startCounter() {
-      const duration = 1800; // Тривалість анімації - 1.8 секунди
+    // 2. Власна анімація від 0 до exact_targets
+    function runAnimation() {
+      const duration = 1600; // 1.6 секунди
       const startTime = performance.now();
 
       function update(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
         
-        // Формула плавного уповільнення наприкінці
+        // Плавне сповільнення
         const easeProgress = 1 - Math.pow(1 - progress, 3);
 
         countElements.forEach(function(el, index) {
           const target = EXACT_TARGETS[index] || 0;
-          const currentValue = Math.floor(easeProgress * target);
-          el.textContent = currentValue;
+          const val = Math.floor(easeProgress * target);
+          el.textContent = val;
         });
 
         if (progress < 1) {
           requestAnimationFrame(update);
         } else {
-          // Залізобетонно виставляємо фінальні точні числа наприкінці
+          // Завершення: виставляємо фінальні точні числа і блокуємо
           countElements.forEach(function(el, index) {
-            if (EXACT_TARGETS[index] !== undefined) {
-              el.textContent = EXACT_TARGETS[index];
-            }
+            el.textContent = EXACT_TARGETS[index];
           });
+          isFinished = true; // Включаємо бронезахист
         }
       }
 
       requestAnimationFrame(update);
     }
 
-    // Запуск строго 1 раз при досягненні блоку
+    // 3. Запускаємо при появі на екрані (лише 1 раз)
     const observer = new IntersectionObserver(function(entries) {
       entries.forEach(function(entry) {
-        if (entry.isIntersecting && !hasRun) {
-          hasRun = true;
-          startCounter();
-          observer.disconnect(); // Повністю вимикаємо спостереження
+        if (entry.isIntersecting && !hasStarted) {
+          hasStarted = true;
+          runAnimation();
+          observer.disconnect(); // Вимикаємо спостерігач скролу навжди
         }
       });
-    }, { threshold: 0.15 });
+    }, { threshold: 0.1 });
 
     observer.observe(section);
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSingleCounter);
+    document.addEventListener('DOMContentLoaded', initCounterFix);
   } else {
-    initSingleCounter();
+    initCounterFix();
   }
 })();
 </script>
