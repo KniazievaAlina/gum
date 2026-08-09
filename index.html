@@ -36,11 +36,14 @@
 
 
 <style>
-  /* Гарантуємо, що заменені цифри та картки не зникнуть при скролі */
-  #counter1-m * {
+  /* Забороняємо CSS-анімації перезапускатися */
+  #counter1-m, 
+  #counter1-m *,
+  #counter1-m .count {
     opacity: 1 !important;
     visibility: visible !important;
     animation: none !important;
+    transition: none !important;
   }
 </style>
 
@@ -949,46 +952,61 @@
     <input name="animation" type="hidden">
 
     <!-- СКРИПТДЛЯ ФІКСАЦІЇ ЛІЧИЛЬНИКА -->
-   <script>
-(function() {
-  window.addEventListener('load', function() {
+  <script>
+(function () {
+  // Чекаємо завантаження сторінки
+  window.addEventListener('load', function () {
     const section = document.getElementById('counter1-m');
     if (!section) return;
 
-    let hasRun = false;
+    let isLocked = false;
 
-    // Слідкуємо за появою блоку на екрані
-    const observer = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (entry.isIntersecting && !hasRun) {
-          hasRun = true;
+    // Функція, яка жорстко зафіксує цифри
+    function freezeCounters() {
+      if (isLocked) return;
+      
+      // Чекаємо 2.5 сек, щоб Mobirise дорахував до кінця
+      setTimeout(function () {
+        isLocked = true;
 
-          // Чекаємо 2.5 секунди, поки Mobirise закінчить підрахунок
-          setTimeout(function() {
-            const counts = section.querySelectorAll('.count');
+        const countElements = section.querySelectorAll('.count');
 
-            counts.forEach(function(el) {
-              // 1. Беремо значення, яке зараз у цифрі (наприклад, 1264)
-              const finalNum = el.textContent.trim();
+        countElements.forEach(function (el) {
+          // 1. Зафіксовуємо поточне число (наприклад, 1264)
+          const targetValue = el.textContent.trim();
+          el.innerHTML = targetValue;
 
-              // 2. Створюємо новий звичайний тег <span> замість старого <h4>.count
-              const cleanSpan = document.createElement('span');
-              cleanSpan.className = el.className; // зберігаємо розміри шрифту
-              cleanSpan.textContent = finalNum;
+          // 2. Видаляємо атрибути Mobirise, якими він орієнтується для анімації
+          el.removeAttribute('data-to');
+          el.removeAttribute('data-target');
+          el.classList.remove('mbr-animated', 'counted', 'viewport-checker');
 
-              // 3. Повністю ЗАМІНЮЄМО елемент. 
-              // Для нового тегу Mobirise більше не існує і не зможе його перехопити.
-              el.parentNode.replaceChild(cleanSpan, el);
+          // 3. Ставимо MutationObserver: якщо Mobirise спробує змінити текст — повертаємо число назад!
+          const protectObserver = new MutationObserver(function (mutations) {
+            mutations.forEach(function () {
+              if (el.textContent.trim() !== targetValue) {
+                el.textContent = targetValue; // Примусово вертаємо підсумкове число
+              }
             });
+          });
 
-            // Завершуємо спостереження
-            observer.disconnect();
-          }, 2500);
+          protectObserver.observe(el, { childList: true, characterData: true, subtree: true });
+        });
+
+      }, 2500);
+    }
+
+    // Відстежуємо перший скрол до блоку
+    const scrollObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting && !isLocked) {
+          freezeCounters();
+          scrollObserver.disconnect();
         }
       });
-    }, { threshold: 0.2 });
+    }, { threshold: 0.1 });
 
-    observer.observe(section);
+    scrollObserver.observe(section);
   });
 })();
 </script>
