@@ -36,14 +36,11 @@
 
 
 <style>
-  /* Забороняємо Mobirise ховати цифри при скролі */
-  #counter1-m .count,
-  #counter1-m .item {
+  /* Гарантуємо, що заменені цифри та картки не зникнуть при скролі */
+  #counter1-m * {
     opacity: 1 !important;
     visibility: visible !important;
-    transform: none !important;
     animation: none !important;
-    transition: none !important;
   }
 </style>
 
@@ -995,17 +992,9 @@
   });
 })();
 </script>
-Також додайте ці стилі у файл index.html перед </head>:
 
-HTML
-<style>
-  /* Гарантуємо, що заменені цифри та картки не зникнуть при скролі */
-  #counter1-m * {
-    opacity: 1 !important;
-    visibility: visible !important;
-    animation: none !important;
-  }
-</style>
+
+
 </body>
 
 </html>
