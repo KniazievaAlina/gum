@@ -34,7 +34,6 @@
     <link rel="preload" as="style" href="assets/mobirise/css/mbr-additional.css?v=h68dbN">
     <link rel="stylesheet" href="assets/mobirise/css/mbr-additional.css?v=h68dbN" type="text/css">
 
-
 <style>
   #counter1-m,
   #counter1-m .count,
@@ -954,71 +953,62 @@
  
 <script>
 (function() {
-  const EXACT_TARGETS = [1264, 16, 36];
+  const TARGETS = [1264, 16, 36];
 
-  function initCounterFix() {
+  function runCleanCounter() {
     const section = document.getElementById('counter1-m');
     if (!section) return;
 
     const countElements = section.querySelectorAll('.count');
     if (!countElements.length) return;
 
-    let isFinished = false;
-    let hasStarted = false;
-
-    // 1. ЗАХИСТ: Слідкуємо за елементами. Якщо Mobirise або щось інше
-    // намагається втрутитися після завершення — примусово повертаємо точні значення!
-    countElements.forEach(function(el, index) {
-      const targetVal = String(EXACT_TARGETS[index]);
-
-      const protector = new MutationObserver(function() {
-        if (isFinished && el.textContent.trim() !== targetVal) {
-          el.textContent = targetVal;
-        }
-      });
-
-      protector.observe(el, { childList: true, characterData: true, subtree: true });
+    // 1. Негайно видаляємо всі атрибути та класи, за які Mobirise чіпляє свій лічильник
+    countElements.forEach(function(el) {
+      el.removeAttribute('data-to');
+      el.removeAttribute('data-target');
+      el.removeAttribute('data-speed');
+      el.classList.remove('mbr-animated', 'counted', 'viewport-checker');
     });
 
-    // 2. Власна анімація від 0 до exact_targets
-    function runAnimation() {
-      const duration = 1600; // 1.6 секунди
+    let hasStarted = false;
+
+    // 2. Власна анімація від 0 до 100%
+    function animate() {
+      const duration = 1800; // 1.8 секунди
       const startTime = performance.now();
 
-      function update(currentTime) {
+      function step(currentTime) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
         
-        // Плавне сповільнення
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        // Плавне сповільнення наприкінці
+        const easeOut = 1 - Math.pow(1 - progress, 3);
 
         countElements.forEach(function(el, index) {
-          const target = EXACT_TARGETS[index] || 0;
-          const val = Math.floor(easeProgress * target);
-          el.textContent = val;
+          const target = TARGETS[index] || 0;
+          el.textContent = Math.floor(easeOut * target);
         });
 
         if (progress < 1) {
-          requestAnimationFrame(update);
+          requestAnimationFrame(step);
         } else {
-          // Завершення: виставляємо фінальні точні числа і блокуємо
+          // Жорстко прописуємо точні підсумкові цифри
           countElements.forEach(function(el, index) {
-            el.textContent = EXACT_TARGETS[index];
+            el.textContent = TARGETS[index];
           });
-          isFinished = true; // Включаємо бронезахист
         }
       }
 
-      requestAnimationFrame(update);
+      requestAnimationFrame(step);
     }
 
-    // 3. Запускаємо при появі на екрані (лише 1 раз)
+    // 3. Запуск при досягненні 10% видимості (щоб починало рахувати одразу)
     const observer = new IntersectionObserver(function(entries) {
       entries.forEach(function(entry) {
         if (entry.isIntersecting && !hasStarted) {
           hasStarted = true;
-          runAnimation();
-          observer.disconnect(); // Вимикаємо спостерігач скролу навжди
+          animate();
+          observer.disconnect(); // Повністю вимикаємо спостереження
         }
       });
     }, { threshold: 0.1 });
@@ -1026,10 +1016,11 @@
     observer.observe(section);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCounterFix);
+  // Запускаємо якомога раніше
+  if (document.readyState === 'interactive' || document.readyState === 'complete') {
+    runCleanCounter();
   } else {
-    initCounterFix();
+    document.addEventListener('DOMContentLoaded', runCleanCounter);
   }
 })();
 </script>
