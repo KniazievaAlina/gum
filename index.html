@@ -952,55 +952,54 @@
     <input name="animation" type="hidden">
 
     <!-- СКРИПТДЛЯ ФІКСАЦІЇ ЛІЧИЛЬНИКА -->
-  <script>
+ 
+<script>
 (function () {
-  // Чекаємо завантаження сторінки
   window.addEventListener('load', function () {
     const section = document.getElementById('counter1-m');
     if (!section) return;
 
+    // 1. Одразу зберігаємо ТОЧНІ підсумкові числа з HTML до початку анімацій
+    const countElements = section.querySelectorAll('.count');
+    const targetValues = [];
+    
+    countElements.forEach(function (el) {
+      targetValues.push(el.textContent.trim());
+    });
+
     let isLocked = false;
 
-    // Функція, яка жорстко зафіксує цифри
-    function freezeCounters() {
-      if (isLocked) return;
-      
-      // Чекаємо 2.5 сек, щоб Mobirise дорахував до кінця
-      setTimeout(function () {
-        isLocked = true;
-
-        const countElements = section.querySelectorAll('.count');
-
-        countElements.forEach(function (el) {
-          // 1. Зафіксовуємо поточне число (наприклад, 1264)
-          const targetValue = el.textContent.trim();
-          el.innerHTML = targetValue;
-
-          // 2. Видаляємо атрибути Mobirise, якими він орієнтується для анімації
-          el.removeAttribute('data-to');
-          el.removeAttribute('data-target');
-          el.classList.remove('mbr-animated', 'counted', 'viewport-checker');
-
-          // 3. Ставимо MutationObserver: якщо Mobirise спробує змінити текст — повертаємо число назад!
-          const protectObserver = new MutationObserver(function (mutations) {
-            mutations.forEach(function () {
-              if (el.textContent.trim() !== targetValue) {
-                el.textContent = targetValue; // Примусово вертаємо підсумкове число
-              }
-            });
-          });
-
-          protectObserver.observe(el, { childList: true, characterData: true, subtree: true });
-        });
-
-      }, 2500);
-    }
-
-    // Відстежуємо перший скрол до блоку
+    // 2. Відстежуємо появу блоку на екрані
     const scrollObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (entry.isIntersecting && !isLocked) {
-          freezeCounters();
+          isLocked = true;
+
+          // Даємо Mobirise 4 секунди повністю завершити анімацію
+          setTimeout(function () {
+            countElements.forEach(function (el, index) {
+              const exactNum = targetValues[index]; // Берем 1264, 16, 36
+
+              // Примусово ставимо точне число
+              el.textContent = exactNum;
+
+              // Видаляємо атрибути та класи анімації Mobirise
+              el.removeAttribute('data-to');
+              el.removeAttribute('data-target');
+              el.classList.remove('mbr-animated', 'counted', 'viewport-checker');
+
+              // Ставимо захист: якщо Mobirise знову спробує змінити число при скролі — вертаємо точне!
+              const protectObserver = new MutationObserver(function () {
+                if (el.textContent.trim() !== exactNum) {
+                  el.textContent = exactNum;
+                }
+              });
+
+              protectObserver.observe(el, { childList: true, characterData: true, subtree: true });
+            });
+
+          }, 4000); // 4 секунди гарантують, що анімація повністю закінчилась
+
           scrollObserver.disconnect();
         }
       });
@@ -1010,7 +1009,6 @@
   });
 })();
 </script>
-
 
 
 </body>
