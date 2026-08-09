@@ -36,10 +36,10 @@
 
 
 <style>
-  /* Забороняємо CSS-анімації перезапускатися */
-  #counter1-m, 
-  #counter1-m *,
-  #counter1-m .count {
+  /* Забороняємо Mobirise ховати або скидати елементи блоку counter1-m */
+  #counter1-m,
+  #counter1-m .count,
+  #counter1-m .item {
     opacity: 1 !important;
     visibility: visible !important;
     animation: none !important;
@@ -954,60 +954,66 @@
     <!-- СКРИПТДЛЯ ФІКСАЦІЇ ЛІЧИЛЬНИКА -->
  
 <script>
-(function () {
-  window.addEventListener('load', function () {
-    const section = document.getElementById('counter1-m');
-    if (!section) return;
+document.addEventListener('DOMContentLoaded', function () {
+  const section = document.getElementById('counter1-m');
+  if (!section) return;
 
-    // 1. Одразу зберігаємо ТОЧНІ підсумкові числа з HTML до початку анімацій
-    const countElements = section.querySelectorAll('.count');
-    const targetValues = [];
-    
-    countElements.forEach(function (el) {
-      targetValues.push(el.textContent.trim());
-    });
+  const countElements = section.querySelectorAll('.count');
+  let hasRun = false;
 
-    let isLocked = false;
-
-    // 2. Відстежуємо появу блоку на екрані
-    const scrollObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting && !isLocked) {
-          isLocked = true;
-
-          // Даємо Mobirise 4 секунди повністю завершити анімацію
-          setTimeout(function () {
-            countElements.forEach(function (el, index) {
-              const exactNum = targetValues[index]; // Берем 1264, 16, 36
-
-              // Примусово ставимо точне число
-              el.textContent = exactNum;
-
-              // Видаляємо атрибути та класи анімації Mobirise
-              el.removeAttribute('data-to');
-              el.removeAttribute('data-target');
-              el.classList.remove('mbr-animated', 'counted', 'viewport-checker');
-
-              // Ставимо захист: якщо Mobirise знову спробує змінити число при скролі — вертаємо точне!
-              const protectObserver = new MutationObserver(function () {
-                if (el.textContent.trim() !== exactNum) {
-                  el.textContent = exactNum;
-                }
-              });
-
-              protectObserver.observe(el, { childList: true, characterData: true, subtree: true });
-            });
-
-          }, 4000); // 4 секунди гарантують, що анімація повністю закінчилась
-
-          scrollObserver.disconnect();
-        }
-      });
-    }, { threshold: 0.1 });
-
-    scrollObserver.observe(section);
+  // 1. Зберігаємо точні числа з HTML та очищаємо класи, які тригерять Mobirise
+  const targets = [];
+  countElements.forEach(function (el) {
+    targets.push(parseInt(el.textContent.replace(/\s+/g, ''), 10) || 0);
+    el.classList.remove('mbr-animated', 'counted', 'viewport-checker');
+    el.removeAttribute('data-to');
+    el.removeAttribute('data-target');
   });
-})();
+
+  // 2. Власна плавна анімація (працює рівно 1.5 секунди)
+  function startCustomCounter() {
+    const duration = 1500; // тривалість анімації в мілісекундах
+    const startTime = performance.now();
+
+    function update(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1); // від 0 до 1
+
+      countElements.forEach(function (el, index) {
+        const target = targets[index];
+        // Плавне уповільнення наприкінці (easeOutQuad)
+        const currentProgress = 1 - (1 - progress) * (1 - progress);
+        const currentValue = Math.floor(currentProgress * target);
+
+        el.textContent = currentValue;
+      });
+
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      } else {
+        // Гарантуємо точні підсумкові значення після завершення
+        countElements.forEach(function (el, index) {
+          el.textContent = targets[index];
+        });
+      }
+    }
+
+    requestAnimationFrame(update);
+  }
+
+  // 3. Запускаємо ТІЛЬКИ 1 РАЗ при появі на екрані
+  const observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting && !hasRun) {
+        hasRun = true;
+        startCustomCounter();
+        observer.disconnect(); // Повністю відключаємо спостерігач навіки
+      }
+    });
+  }, { threshold: 0.2 });
+
+  observer.observe(section);
+});
 </script>
 
 
