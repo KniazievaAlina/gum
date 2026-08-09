@@ -943,34 +943,53 @@
 
     <!-- СКРИПТДЛЯ ФІКСАЦІЇ ЛІЧИЛЬНИКА -->
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      const counterBlock = document.getElementById('counter1-m');
-      if (!counterBlock) return;
+window.addEventListener('load', function () {
+  const counterBlock = document.getElementById('counter1-m');
+  if (!counterBlock) return;
 
-      const countElements = counterBlock.querySelectorAll('.count');
-      let hasAnimated = false;
+  const countElements = counterBlock.querySelectorAll('.count');
+  let isDone = false;
 
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting && !hasAnimated) {
-            hasAnimated = true;
+  // Функція для фіксації кінцевих цифр
+  function lockCounters() {
+    if (isDone) return;
+    
+    // Чекаємо 2.5 секунди, поки Mobirise дорахує до кінця
+    setTimeout(() => {
+      isDone = true;
 
-            setTimeout(() => {
-              countElements.forEach(el => {
-                const finalValue = el.textContent.trim();
-                el.textContent = finalValue;
-                el.classList.remove('mbr-animated');
-              });
+      countElements.forEach(el => {
+        // Записуємо поточне значення як постійний текст
+        const val = el.textContent;
+        el.textContent = val;
+        
+        // Видаляємо всі класи, за які чіпляється аніматор Mobirise
+        el.classList.remove('mbr-animated', 'counted', 'viewport-checker');
+      });
 
-              observer.unobserve(counterBlock);
-            }, 2000);
-          }
-        });
-      }, { threshold: 0.3 });
+      // Видаляємо класи анімації з самого блоку та його батьків
+      counterBlock.classList.remove('animated');
+      
+      // Клонуємо елемент, щоб повністю СТЕРТИ всі прив'язані до нього події скролу Mobirise
+      const newBlock = counterBlock.cloneNode(true);
+      counterBlock.parentNode.replaceChild(newBlock, counterBlock);
 
-      observer.observe(counterBlock);
+    }, 2500);
+  }
+
+  // Відстежуємо появу на екрані
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !isDone) {
+        lockCounters();
+        observer.disconnect();
+      }
     });
-    </script>
+  }, { threshold: 0.1 });
+
+  observer.observe(counterBlock);
+});
+</script>
 </body>
 
 </html>
