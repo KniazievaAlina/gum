@@ -16647,3 +16647,14 @@ a {
 .cid-vsAg18sPD2 .copyright {
   color: #ffffff;
 }
+
+
+/* Застосовується до будь-яких елементів, ID яких починається з "footer01" */
+[id^="footer01"] .mbr-fonts-style.display-7 {
+    font-size: 0.9rem !important; /* Зменшує розмір шрифту (за замовчуванням ~1.2rem) */
+}
+
+/* Додатково гарантує, що посилання та поштові адреси не переносяться на новий рядок */
+[id^="footer01"] a {
+    white-space: nowrap;
+}
