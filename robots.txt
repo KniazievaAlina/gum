@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /assets/
+
+Disallow: /project.mobirise
+Disallow: /*.json$
+Disallow: /*?*
+
+
+Sitemap: https://kniazievaalina.github.io/gum/sitemap.xml
+
